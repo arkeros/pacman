@@ -112,6 +112,41 @@ class MultiAgentSearchAgent(Agent):
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
 
+
+class MinimaxNode:
+    def __init__(self, game_state):
+        """
+        :type game_state: pacman.GameState
+        """
+        self.game_state = game_state
+
+    def is_terminal(self):
+        return self.game_state.isWin() or self.game_state.isLose()
+
+    def successors(self):
+        return
+
+    def maximize(self):
+        return self.game_state.
+
+
+def minimax(node, heuristic, depth):
+    """
+    :type node: MinimaxNode
+    :type heuristic: function
+    :type depth: int
+
+    """
+    if depth == 0 or node.is_terminal():
+        return heuristic(node.game_state)
+
+    succesors = node.succesors()
+    if node.maximize():
+        return max(minimax(succesor, heuristic, depth - 1) for succesor in succesors)
+    else:
+        return min(minimax(succesor, heuristic, depth - 1) for succesor in succesors)
+
+
 class MinimaxAgent(MultiAgentSearchAgent):
     """
       Your minimax agent (question 2)
@@ -135,7 +170,12 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns the total number of agents in the game
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        def key()
+
+        actions = gameState.getLegalActions(0)
+        return max(actions, key=lambda x: minimax())
+
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """

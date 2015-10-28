@@ -19,6 +19,7 @@ import random, util
 
 from game import Agent
 
+
 class ReflexAgent(Agent):
     """
       A reflex agent chooses an action at each choice point by examining
@@ -82,6 +83,7 @@ class ReflexAgent(Agent):
             return 1000
         return 1000 - min(manhattanDistance(newPos, food) for food in newFood.asList()) - 25*newFood.count()
 
+
 def scoreEvaluationFunction(currentGameState):
     """
       This default evaluation function just returns the score of the state.
@@ -91,6 +93,7 @@ def scoreEvaluationFunction(currentGameState):
       (not reflex agents).
     """
     return currentGameState.getScore()
+
 
 class MultiAgentSearchAgent(Agent):
     """
@@ -114,20 +117,26 @@ class MultiAgentSearchAgent(Agent):
 
 
 class MinimaxNode:
-    def __init__(self, game_state):
+    def __init__(self, game_state, agent_index, n_agents):
         """
         :type game_state: pacman.GameState
+        :type agent_index: int
         """
         self.game_state = game_state
+        self.agent_index = agent_index
+        self.n_agents = n_agents
 
     def is_terminal(self):
         return self.game_state.isWin() or self.game_state.isLose()
 
     def successors(self):
-        return
+        next_agent_index = (self.agent_index + 1) % self.n_agents
+        for action in self.game_state.getLegalActions(self.agent_index):
+            next_sate = self.game_state.generateSuccessor(self.agent_index, action)
+            yield MinimaxNode(next_sate, next_agent_index, self.n_agents)
 
     def maximize(self):
-        return self.game_state.
+        return self.agent_index == 0
 
 
 def minimax(node, heuristic, depth):
@@ -140,11 +149,11 @@ def minimax(node, heuristic, depth):
     if depth == 0 or node.is_terminal():
         return heuristic(node.game_state)
 
-    succesors = node.succesors()
+    successors = node.successors()
     if node.maximize():
-        return max(minimax(succesor, heuristic, depth - 1) for succesor in succesors)
+        return max(minimax(successor, heuristic, depth - 1) for successor in successors)
     else:
-        return min(minimax(succesor, heuristic, depth - 1) for succesor in succesors)
+        return min(minimax(successor, heuristic, depth - 1) for successor in successors)
 
 
 class MinimaxAgent(MultiAgentSearchAgent):
@@ -171,10 +180,16 @@ class MinimaxAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
 
-        def key()
+        n_agents = gameState.getNumAgents()
+        depth = self.depth*n_agents - 1
+
+        def action_value(action):
+            state = gameState.generateSuccessor(0, action)
+            node = MinimaxNode(state, 1, n_agents)
+            return minimax(node, self.evaluationFunction, depth)
 
         actions = gameState.getLegalActions(0)
-        return max(actions, key=lambda x: minimax())
+        return max(actions, key=action_value)
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):

@@ -117,43 +117,29 @@ class MultiAgentSearchAgent(Agent):
 
 
 class MinimaxNode:
-    def __init__(self, game_state, agent_index, n_agents):
+    def __init__(self, game_state, agent_index):
         """
         :type game_state: pacman.GameState
         :type agent_index: int
         """
         self.game_state = game_state
         self.agent_index = agent_index
-        self.n_agents = n_agents
-
-    def is_terminal(self):
-        return self.game_state.isWin() or self.game_state.isLose()
 
     def successors(self):
-        next_agent_index = (self.agent_index + 1) % self.n_agents
+        next_agent_index = (self.agent_index + 1) % self.game_state.getNumAgents()
         for action in self.game_state.getLegalActions(self.agent_index):
             next_sate = self.game_state.generateSuccessor(self.agent_index, action)
-            yield MinimaxNode(next_sate, next_agent_index, self.n_agents)
+            yield MinimaxNode(next_sate, next_agent_index)
 
     def maximize(self):
         return self.agent_index == 0
 
 
-def minimax(node, heuristic, depth):
+def is_terminal(game_state):
     """
-    :type node: MinimaxNode
-    :type heuristic: function
-    :type depth: int
-
+        :type game_state: pacman.GameState
     """
-    if depth == 0 or node.is_terminal():
-        return heuristic(node.game_state)
-
-    successors = node.successors()
-    if node.maximize():
-        return max(minimax(successor, heuristic, depth - 1) for successor in successors)
-    else:
-        return min(minimax(successor, heuristic, depth - 1) for successor in successors)
+    return game_state.isWin() or game_state.isLose()
 
 
 class MinimaxAgent(MultiAgentSearchAgent):
@@ -185,11 +171,26 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         def action_value(action):
             state = gameState.generateSuccessor(0, action)
-            node = MinimaxNode(state, 1, n_agents)
-            return minimax(node, self.evaluationFunction, depth)
+            node = MinimaxNode(state, 1)
+            return self.minimax(node, depth)
 
         actions = gameState.getLegalActions(0)
         return max(actions, key=action_value)
+
+    def minimax(self, node, depth):
+        """
+        :type node: MinimaxNode
+        :type depth: int
+
+        """
+        if depth == 0 or is_terminal(node.game_state):
+            return self.evaluationFunction(node.game_state)
+
+        successors = node.successors()
+        if node.maximize():
+            return max(self.minimax(successor, depth - 1) for successor in successors)
+        else:
+            return min(self.minimax(successor, depth - 1) for successor in successors)
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):

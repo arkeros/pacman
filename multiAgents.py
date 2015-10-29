@@ -218,9 +218,22 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         if depth == 0 or is_terminal(node.game_state):
             return self.evaluationFunction(node.game_state)
 
-        v = float('-infinity')
-        for successor in node.successors():
+        if node.maximize():
+          v = float('-infinity')
+          for successor in node.successors():
             v = max(v, self.alphabeta(successor, alpha, beta, depth-1))
+            if v > beta:
+              return v
+            alpha = max(alpha, v)
+        else:
+          v = float('infinity')
+          for successor in node.successors():
+            v = min(v, self.alphabeta(successor, alpha, beta, depth-1))
+            if v < alpha:
+              return v
+            beta = min(beta, v)
+        return v
+
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """

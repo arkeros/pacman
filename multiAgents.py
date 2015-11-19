@@ -162,18 +162,12 @@ class MinimaxAgent(MultiAgentSearchAgent):
           gameState.getNumAgents():
             Returns the total number of agents in the game
         """
-        "*** YOUR CODE HERE ***"
 
         n_agents = gameState.getNumAgents()
-        depth = self.depth*n_agents - 1
-
-        def action_value(action):
-            state = gameState.generateSuccessor(0, action)
-            node = MinimaxNode(state, 1)
-            return self.minimax(node, depth)
-
-        actions = gameState.getLegalActions(0)
-        return max(actions, key=action_value)
+        depth = self.depth*n_agents
+        root_node = MinimaxNode(gameState, 0)
+        action, value = self.minimax(root_node, depth)
+        return action
 
     def minimax(self, node, depth):
         """
@@ -182,13 +176,14 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         """
         if depth == 0 or is_terminal(node.game_state):
-            return self.evaluationFunction(node.game_state)
+            return None, self.evaluationFunction(node.game_state)
 
         successors = node.successors()
+        pairs = ([action, self.minimax(child, depth - 1)[1]] for action, child in successors)
         if node.maximize():
-            return max(self.minimax(successor, depth - 1) for successor in successors)
+            return max(pairs, key=itemgetter(1))
         else:
-            return min(self.minimax(successor, depth - 1) for successor in successors)
+            return min(pairs, key=itemgetter(1))
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -200,7 +195,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
           Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
         n_agents = gameState.getNumAgents()
         depth = self.depth*n_agents
         root_node = MinimaxNode(gameState, 0)

@@ -11,8 +11,7 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and 
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
-
+from operator import itemgetter
 from util import manhattanDistance
 from game import Directions
 import random, util
@@ -29,7 +28,6 @@ class ReflexAgent(Agent):
       it in any way you see fit, so long as you don't touch our method
       headers.
     """
-
 
     def getAction(self, gameState):
         """
@@ -129,7 +127,7 @@ class MinimaxNode:
         next_agent_index = (self.agent_index + 1) % self.game_state.getNumAgents()
         for action in self.game_state.getLegalActions(self.agent_index):
             next_sate = self.game_state.generateSuccessor(self.agent_index, action)
-            yield MinimaxNode(next_sate, next_agent_index)
+            yield action, MinimaxNode(next_sate, next_agent_index)
 
     def maximize(self):
         return self.agent_index == 0
@@ -204,35 +202,37 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         n_agents = gameState.getNumAgents()
-        depth = self.depth*n_agents - 1
-
-        def action_value(action):
-            state = gameState.generateSuccessor(0, action)
-            node = MinimaxNode(state, 1)
-            return self.alphabeta(node, float('-infinity'), float('+infinity'), depth)
-
-        actions = gameState.getLegalActions(0)
-        return max(actions, key=action_value)
+        depth = self.depth*n_agents
+        root_node = MinimaxNode(gameState, 0)
+        action, value = self.alphabeta(root_node, float('-infinity'), float('+infinity'), depth)
+        return action
 
     def alphabeta(self, node, alpha, beta, depth):
+        """
+            :type node: MinimaxNode
+        """
         if depth == 0 or is_terminal(node.game_state):
-            return self.evaluationFunction(node.game_state)
+            return None, self.evaluationFunction(node.game_state)
 
+        value_action = None
         if node.maximize():
-          v = float('-infinity')
-          for successor in node.successors():
-            v = max(v, self.alphabeta(successor, alpha, beta, depth-1))
-            if v > beta:
-              return v
-            alpha = max(alpha, v)
+            value = float('-infinity')
+            for action, child in node.successors():
+                child_value = self.alphabeta(child, alpha, beta, depth-1)[1]
+                if child_value > value:
+                    value = child_value
+                    value_action = action
+                if value > beta:
+                    return value_action, value
+                alpha = max(alpha, value)
         else:
-          v = float('infinity')
-          for successor in node.successors():
-            v = min(v, self.alphabeta(successor, alpha, beta, depth-1))
-            if v < alpha:
-              return v
-            beta = min(beta, v)
-        return v
+            value = float('infinity')
+            for action, child in node.successors():
+                value = min(value, self.alphabeta(child, alpha, beta, depth-1)[1])
+                if value < alpha:
+                    return action, value
+                beta = min(beta, value)
+        return value_action, value
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
@@ -247,18 +247,65 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           All ghosts should be modeled as choosing uniformly at random from their
           legal moves.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        n_agents = gameState.getNumAgents()
+        depth = self.depth*n_agents
+        root_node = MinimaxNode(gameState, 0)
+        action, value = self.expectimax(root_node, depth)
+        return action
+
+    def expectimax(self, node, depth):
+        if depth == 0 or is_terminal(node.game_state):
+            return None, self.evaluationFunction(node.game_state)
+
+        if node.maximize():
+            return max(
+                ([action, self.expectimax(child, depth-1)[1]] for action, child in node.successors()),
+                key=itemgetter(1)
+            )
+        else:
+            successors = list(node.successors())
+            n_actions = len(successors)
+            sumation = sum(self.expectimax(child, depth-1)[1] for action, child in node.successors())
+            return None, 1.0 * sumation / n_actions
+
+
+
+def min_or_zero(iterable):
+    # self explanatory dirty hack...
+    return -min(0, 0, *(-item for item in iterable))
 
 def betterEvaluationFunction(currentGameState):
     """
       Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
       evaluation function (question 5).
 
-      DESCRIPTION: <write something here so we know what you did>
+      DESCRIPTION: Assigns to every state an arbitrary value (1000).
+      Then penalizes according to what we want to avoid:
+       * remoteness from the nearest food
+       * lots of food to eat
+       * proximity to the ghosts
+       * remoteness from the scared ghosts
+       * capsules
+      Each weighted by their importance
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    position = currentGameState.getPacmanPosition()
+    foodGrid = currentGameState.getFood()
+    ghostStates = currentGameState.getGhostStates()
+    capsules = currentGameState.getCapsules()
+    foods = capsules + foodGrid.asList()  # to force eat capsules
+
+    distanceToGhost = min(manhattanDistance(position, ghost.getPosition()) for ghost in ghostStates)
+    distanceToScaredGhost = min_or_zero(manhattanDistance(position, ghost.getPosition()) for ghost in ghostStates if ghost.scaredTimer)
+    distanceToFood = min_or_zero(
+        manhattanDistance(position, food) for food in foods)
+
+    evaluation = 1000.0
+    evaluation -= distanceToFood
+    evaluation -= 15*len(foods)
+    evaluation -= 50.0/(.1 + distanceToGhost)**2
+    evaluation -= 7*distanceToScaredGhost
+    evaluation -= 100*len(capsules)
+    return evaluation
 
 # Abbreviation
 better = betterEvaluationFunction

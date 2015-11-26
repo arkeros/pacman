@@ -20,11 +20,11 @@
 # value iteration.
 
 def question3():
+    """ if the algorithm were purely random, it would take 1 / (0.25 ** 5) = 1024 iterations to reach the far right.
+    This is for epsilon = 1.
+    If epsilon < 1, just would add iterations, because it would go head to the left, so it is
+    impossible to guarantee 99% reaching the far right for any value of epsilon and alpha in 50 iterations.  """
     return 'NOT POSSIBLE'
-    answerEpsilon = 0.5
-    answerLearningRate = 0.1
-    return answerEpsilon, answerLearningRate
-    # If not possible, return 'NOT POSSIBLE'
 
 if __name__ == '__main__':
     print 'Answers to analysis questions:'

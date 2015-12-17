@@ -13,7 +13,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 import random
 import util
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 
 from learningAgents import ReinforcementAgent
@@ -43,6 +43,7 @@ class QLearningAgent(ReinforcementAgent):
         "You can initialize Q-values here..."
         ReinforcementAgent.__init__(self, **args)
         self.q = defaultdict(lambda: 0.0)
+        self.n = Counter()
 
     def getQValue(self, state, action):
         """
@@ -62,7 +63,7 @@ class QLearningAgent(ReinforcementAgent):
         value = 0.0
         actions = list(self.getLegalActions(state))
         if actions:
-            value = max(self.getQValue(state, action) for action in actions)
+            value = max(self.getQValue(state, action) * 10. / (self.n[(state, action)] + 10.) for action in actions)
         return value
 
     def computeActionFromQValues(self, state):
@@ -103,6 +104,7 @@ class QLearningAgent(ReinforcementAgent):
           NOTE: You should never call this function,
           it will be called on your behalf
         """
+        self.n[(state, action)] += 1  # mark as visited
         sample = reward + self.discount * self.getValue(nextState)
         self.q[(state, action)] = (1 - self.alpha) * self.getQValue(state, action) + self.alpha * sample
 

@@ -120,11 +120,12 @@ from distanceCalculator import Distancer
 from game import Actions
 from game import Directions
 
+
 class GreedyBustersAgent(BustersAgent):
-    "An agent that charges the closest ghost."
+    """An agent that charges the closest ghost."""
 
     def registerInitialState(self, gameState):
-        "Pre-computes the distance between every two points."
+        """Pre-computes the distance between every two points."""
         BustersAgent.registerInitialState(self, gameState)
         self.distancer = Distancer(gameState.data.layout, False)
 
@@ -157,10 +158,20 @@ class GreedyBustersAgent(BustersAgent):
              gameState.getLivingGhosts() list.
         """
         pacmanPosition = gameState.getPacmanPosition()
-        legal = [a for a in gameState.getLegalPacmanActions()]
+        actions = [a for a in gameState.getLegalPacmanActions()]
         livingGhosts = gameState.getLivingGhosts()
-        livingGhostPositionDistributions = \
-            [beliefs for i, beliefs in enumerate(self.ghostBeliefs)
-             if livingGhosts[i+1]]
+        livingGhostPositionDistributions = [beliefs for i, beliefs in enumerate(self.ghostBeliefs) if livingGhosts[i+1]]
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        if len(actions) == 1:
+            best_action = actions[0]
+        else:
+            n_ghosts = len(livingGhostPositionDistributions)
+            positions = livingGhostPositionDistributions[0].iterkeys()
+            positionDistributions = {p: max(livingGhostPositionDistributions[i][p] for i in xrange(n_ghosts)) for p in positions}
+            target = max(positionDistributions.iterkeys(), key=positionDistributions.get)
+
+            def d(action):
+                next_position = Actions.getSuccessor(pacmanPosition, action)
+                return self.distancer.getDistance(next_position, target)
+            best_action = min(actions, key=d)
+        return best_action

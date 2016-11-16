@@ -152,15 +152,12 @@ class ExactInference(InferenceModule):
         # Replace this code with a correct observation update
         # Be sure to handle the "jail" edge case where the ghost is eaten
         # and noisyDistance is None
-        allPossible = util.Counter()
         if noisyDistance is None:
+            allPossible = util.Counter()
             allPossible[self.getJailPosition()] = 1.0
         else:
-            for p in self.legalPositions:
-                true_distance = util.manhattanDistance(p, pacmanPosition)
-                if emissionModel[true_distance] > 0:
-                    allPossible[p] = emissionModel[true_distance] * self.beliefs[p]
-
+            d = util.manhattanDistance
+            allPossible = util.Counter({p: emissionModel[d(p, pacmanPosition)] * self.beliefs[p] for p in self.legalPositions})
         "*** END YOUR CODE HERE ***"
 
         allPossible.normalize()
@@ -224,6 +221,7 @@ class ExactInference(InferenceModule):
 
     def getBeliefDistribution(self):
         return self.beliefs
+
 
 class ParticleFilter(InferenceModule):
     """

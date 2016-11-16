@@ -74,12 +74,17 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-        distanceToGhost = min(manhattanDistance(newPos, ghostState.getPosition()) for ghostState in newGhostStates)
-        if distanceToGhost < 3:
-            return distanceToGhost*-500
-        if newFood.count() == 0:
-            return 1000
-        return 1000 - min(manhattanDistance(newPos, food) for food in newFood.asList()) - 25*newFood.count()
+        print newScaredTimes
+        value = 1000
+        distance_to_ghost = min(manhattanDistance(newPos, ghostState.getPosition()) for ghostState in newGhostStates)
+        if distance_to_ghost < 3:
+            value *= -1
+        if newFood.count() != 0:
+            # closest food
+            value -= min(manhattanDistance(newPos, food) for food in newFood.asList())
+            # penalize by the amount of remaining food
+            value -= 25*newFood.count()
+        return value
 
 
 def scoreEvaluationFunction(currentGameState):
@@ -263,11 +268,6 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             return None, 1.0 * sumation / n_actions
 
 
-
-def min_or_zero(iterable):
-    # self explanatory dirty hack...
-    return -min(0, 0, *(-item for item in iterable))
-
 def betterEvaluationFunction(currentGameState):
     """
       Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
@@ -288,17 +288,27 @@ def betterEvaluationFunction(currentGameState):
     capsules = currentGameState.getCapsules()
     foods = capsules + foodGrid.asList()  # to force eat capsules
 
-    distanceToGhost = min(manhattanDistance(position, ghost.getPosition()) for ghost in ghostStates)
-    distanceToScaredGhost = min_or_zero(manhattanDistance(position, ghost.getPosition()) for ghost in ghostStates if ghost.scaredTimer)
-    distanceToFood = min_or_zero(
-        manhattanDistance(position, food) for food in foods)
+    evaluation = 1000000
 
-    evaluation = 1000.0
-    evaluation -= distanceToFood
-    evaluation -= 15*len(foods)
-    evaluation -= 50.0/(.1 + distanceToGhost)**2
-    evaluation -= 7*distanceToScaredGhost
-    evaluation -= 100*len(capsules)
+    if foodGrid.count() == 0:
+        return evaluation
+
+    normal_ghosts = [ghost for ghost in ghostStates if not ghost.scaredTimer]
+    scared_ghosts = [ghost for ghost in ghostStates if ghost.scaredTimer]
+    if normal_ghosts:
+        distanceToGhost = min(manhattanDistance(position, ghost.getPosition()) for ghost in normal_ghosts)
+        if distanceToGhost <= 2:
+            evaluation = 0
+    if scared_ghosts:
+        distanceToScaredGhost = min(manhattanDistance(position, ghost.getPosition()) for ghost in scared_ghosts)
+        evaluation -= 100 * distanceToScaredGhost
+
+    dist_closest_food = min(manhattanDistance(position, food) for food in foods)
+    evaluation -= dist_closest_food
+
+    evaluation -= 30 * foodGrid.count()
+    evaluation -= 30 * 100 * len(capsules)
+
     return evaluation
 
 # Abbreviation
